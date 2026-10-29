@@ -16,9 +16,10 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QLabel,
     QComboBox,
+    QMessageBox,
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QTextOption
 
 from audio_transcriber.audio_capture import AudioCapture
 from audio_transcriber.transcriber import Transcriber
@@ -120,6 +121,7 @@ class TranscriberApp(QMainWindow):
         self.transcript = QTextEdit()
         self.transcript.setReadOnly(True)
         self.transcript.setFont(QFont("Monospace", 12))
+        self.transcript.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         self.transcript.setPlaceholderText(
             "Transcribed text will appear here..."
         )
@@ -178,11 +180,21 @@ class TranscriberApp(QMainWindow):
 
     def start_capture(self):
         """Start the capture / transcription loop."""
-        self._worker_started = True
-        self.start_btn.setEnabled(False)
-        self.stop_btn.setEnabled(True)
-        self.status_label.setText("Starting...")
-        self._worker.start()
+        try:
+            self._worker_started = True
+            self.start_btn.setEnabled(False)
+            self.stop_btn.setEnabled(True)
+            self.status_label.setText("Starting...")
+            self._worker.start()
+        except Exception as exc:
+            self.start_btn.setEnabled(True)
+            self.stop_btn.setEnabled(False)
+            self.status_label.setText("Failed to start")
+            QMessageBox.critical(
+                self,
+                "Start Error",
+                f"Failed to start capture:\n\n{exc}",
+            )
 
     def stop_capture(self):
         """Stop the capture / transcription loop."""
@@ -203,6 +215,11 @@ class TranscriberApp(QMainWindow):
         self.status_label.setText(f"Error: {msg}")
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
+        QMessageBox.critical(
+            self,
+            "Capture Error",
+            f"Audio capture failed:\n\n{msg}",
+        )
 
     # ---- model selection -------------------------------------------
 
