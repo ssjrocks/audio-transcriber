@@ -28,16 +28,20 @@ class SpeechSegmenter:
         self._vad = VadOptions(min_silence_duration_ms=300, speech_pad_ms=200)
         self._buffer = np.zeros(0, dtype=np.float32)
         self._unchecked = 0
+        self._speech_start: Optional[int] = None
+        self._undrafted = 0
 
     def feed(self, audio: np.ndarray) -> list[np.ndarray]:
         """Add captured audio; return any utterances that are now complete."""
         self._buffer = np.concatenate((self._buffer, audio))
         self._unchecked += len(audio)
+        self._undrafted += len(audio)
         if self._unchecked < self._check_samples:
             return []
         self._unchecked = 0
 
         speech = get_speech_timestamps(self._buffer, self._vad)
+        self._speech_start = None
         if not speech:
             self._buffer = self._buffer[-self._keep_samples:]
             return []
@@ -50,11 +54,21 @@ class SpeechSegmenter:
             # No pause yet: cut at the last gap between phrases, if any.
             cut = speech[-2]["end"] if len(speech) > 1 else size
         else:
+            self._speech_start = speech[0]["start"]
             return []
 
         utterances.append(self._buffer[speech[0]["start"]:cut])
         self._buffer = self._buffer[cut:]
         return utterances
+
+    def draft(self, min_new_seconds: float = 1.0) -> Optional[np.ndarray]:
+        """Return the utterance in progress, if it has grown enough to redo."""
+        if self._speech_start is None:
+            return None
+        if self._undrafted < min_new_seconds * SAMPLE_RATE:
+            return None
+        self._undrafted = 0
+        return self._buffer[self._speech_start:]
 
     def flush(self) -> list[np.ndarray]:
         """Return whatever speech is still buffered (used when stopping)."""
@@ -89,12 +103,17 @@ class Transcriber:
             )
 
     # ------------------------------------------------------------------
-    def transcribe(self, audio: np.ndarray) -> str:
-        """Transcribe a mono float32 numpy array (16 kHz) to text."""
+    def transcribe(self, audio: np.ndarray, draft: bool = False) -> str:
+        """Transcribe a mono float32 numpy array (16 kHz) to text.
+
+        ``draft`` trades accuracy for speed, for text that will be replaced.
+        """
         self.load()
         segments, _info = self._model.transcribe(
             audio,
             language="en",
+            beam_size=1 if draft else 5,
+            without_timestamps=draft,
             condition_on_previous_text=False,
         )
         text = "".join(seg.text for seg in segments if seg.no_speech_prob < 0.8)

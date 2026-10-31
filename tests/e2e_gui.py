@@ -37,6 +37,12 @@ window.model_combo.setCurrentText(model)
 window._worker.capture_target = SINK
 statuses = []
 window._worker.status_changed.connect(statuses.append)
+window._worker.draft_ready.connect(
+    lambda text: print(f"draft {time.time() - started:5.1f}s: {text}", flush=True)
+)
+window._worker.transcript_ready.connect(
+    lambda text: print(f"final {time.time() - started:5.1f}s: {text}", flush=True)
+)
 player = None
 started = time.time()
 

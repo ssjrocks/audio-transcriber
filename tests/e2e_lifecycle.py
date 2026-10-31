@@ -88,6 +88,20 @@ with tempfile.TemporaryDirectory() as tmp:
     check("save", open(path).read() == "[12:00:00] hello\n")
 check("save clears unsaved flag", not window._unsaved)
 
+# Drafts are shown but never saved, and final text replaces them
+window._show_draft("draft words")
+check("draft shown", window.transcript.toPlainText().endswith("draft words"))
+check("draft not in saved text", window._final_text() == "[12:00:00] hello")
+window._show_draft("longer draft words")
+window._on_transcript_update("final words")
+lines = window.transcript.toPlainText().splitlines()
+check("final replaces draft", len(lines) == 2 and lines[1].endswith("] final words"))
+window.clear_transcript()
+window._show_draft("draft on empty")
+window._show_draft("")
+check("draft removed", window.transcript.toPlainText() == "")
+window._unsaved = False
+
 # A dead pw-record is reported instead of hanging
 window.start_btn.click()
 wait_until(lambda: window.status_label.text() == "Listening...")
