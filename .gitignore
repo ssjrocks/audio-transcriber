@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Local only: Open WebUI chat log and the stray first attempt
+recovered-from-audio_transcriber/
