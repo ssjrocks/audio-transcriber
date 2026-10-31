@@ -75,3 +75,7 @@ uv run python -m audio_transcriber
 
 Bump `version` in `pyproject.toml`, commit, then publish with
 `scripts/release.sh NOTES.md`.
+
+## License
+
+GPL-3.0-or-later. See [LICENSE](LICENSE).
