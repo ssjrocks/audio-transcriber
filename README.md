@@ -5,6 +5,12 @@ the computer: videos, calls, podcasts. It records the system output, not a
 microphone, and everything runs locally with
 [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
 
+![Words appearing in grey while they are spoken](docs/screenshots/live.png)
+
+The transcript when you stop:
+
+![The finished transcript with timestamps](docs/screenshots/transcript.png)
+
 ## Install
 
 Needs Ubuntu with PipeWire and [uv](https://docs.astral.sh/uv/).
@@ -67,6 +73,8 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python tests/e2e_gui.py speech.wav
 ```
 
 ## Development
+
+`scripts/screenshots.py speech.wav` retakes the screenshots above from a real run.
 
 ```bash
 uv sync
