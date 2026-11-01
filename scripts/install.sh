@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installs Audio Transcriber for the current user: a Python venv in
-# ~/.local/share/audio-transcriber, the desktop entry and the icon.
+# ~/.local/share/audio-transcriber, and the desktop entry.
 #
 #   From a checkout:  scripts/install.sh            installs that checkout
 #   Anywhere:         curl -fsSL https://raw.githubusercontent.com/ssjrocks/audio-transcriber/master/scripts/install.sh | bash
@@ -13,11 +13,11 @@ DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 ROOT="$DATA/audio-transcriber"
 VENV="$ROOT/venv"
 DESKTOP="$DATA/applications/$APP_ID.desktop"
-ICON="$DATA/icons/hicolor/128x128/apps/$APP_ID.png"
+OLD_ICON="$DATA/icons/hicolor/128x128/apps/$APP_ID.png"
 
 if [[ "${1:-}" == "--uninstall" ]]; then
   rm -rf "$ROOT"
-  rm -f "$DESKTOP" "$ICON"
+  rm -f "$DESKTOP" "$OLD_ICON"
   update-desktop-database -q "$DATA/applications" 2>/dev/null || true
   echo "Audio Transcriber removed."
   exit 0
@@ -57,8 +57,8 @@ EOF
   "$VENV/bin/pip" install -q "$tmp/$(basename "$wheel_url")"
 fi
 
-mkdir -p "$(dirname "$DESKTOP")" "$(dirname "$ICON")"
-"$VENV/bin/python" -c 'import audio_transcriber, pathlib, shutil, sys; shutil.copy(pathlib.Path(audio_transcriber.__file__).with_name("icon.png"), sys.argv[1])' "$ICON"
+mkdir -p "$(dirname "$DESKTOP")"
+rm -f "$OLD_ICON"
 cat > "$DESKTOP" <<EOF
 [Desktop Entry]
 Version=1.1
@@ -66,7 +66,7 @@ Type=Application
 Name=Audio Transcriber
 Comment=Live transcript of any audio playing on this computer
 Exec=$VENV/bin/python -m audio_transcriber
-Icon=$APP_ID
+Icon=/usr/share/icons/Adwaita/scalable/devices/microphone.svg
 Terminal=false
 Categories=Audio;Utility;
 EOF
