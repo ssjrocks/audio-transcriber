@@ -42,19 +42,23 @@ if [[ -n "$src" ]]; then
 else
   tmp=$(mktemp -d)
   trap 'rm -rf "$tmp"' EXIT
-  read -r wheel_url sha < <("$VENV/bin/python" - "$REPO" <<'EOF'
+  # Release files come through GitHub's API (its plain download links time out at busy times).
+  read -r wheel_api wheel_name sha < <("$VENV/bin/python" - "$REPO" <<'EOF'
 import json, sys, urllib.request
 repo = sys.argv[1]
-rel = json.load(urllib.request.urlopen(f"https://api.github.com/repos/{repo}/releases/latest"))
-assets = {a["name"]: a["browser_download_url"] for a in rel["assets"]}
-info = json.load(urllib.request.urlopen(assets["audio-transcriber.json"]))
-print(assets[info["wheel"]], info["sha256"])
+def get(url, accept):
+    req = urllib.request.Request(url, headers={"Accept": accept, "User-Agent": "audio-transcriber-installer"})
+    return urllib.request.urlopen(req, timeout=60).read()
+rel = json.loads(get(f"https://api.github.com/repos/{repo}/releases/latest", "application/vnd.github+json"))
+assets = {a["name"]: a["url"] for a in rel["assets"]}
+info = json.loads(get(assets["audio-transcriber.json"], "application/octet-stream"))
+print(assets[info["wheel"]], info["wheel"], info["sha256"])
 EOF
 )
-  echo "Downloading $wheel_url"
-  curl -fsSL -o "$tmp/$(basename "$wheel_url")" "$wheel_url"
-  echo "$sha  $tmp/$(basename "$wheel_url")" | sha256sum -c --quiet
-  "$VENV/bin/pip" install -q "$tmp/$(basename "$wheel_url")"
+  echo "Downloading $wheel_name"
+  curl -fsSL -H "Accept: application/octet-stream" -o "$tmp/$wheel_name" "$wheel_api"
+  echo "$sha  $tmp/$wheel_name" | sha256sum -c --quiet
+  "$VENV/bin/pip" install -q "$tmp/$wheel_name"
 fi
 
 mkdir -p "$(dirname "$DESKTOP")"

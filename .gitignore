@@ -11,3 +11,6 @@ wheels/
 
 # Local only: Open WebUI chat log and the stray first attempt
 recovered-from-audio_transcriber/
+
+# Release notes (scripts/release.sh NOTES.md)
+release/

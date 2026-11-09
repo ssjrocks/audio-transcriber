@@ -1,6 +1,6 @@
 [project]
 name = "audio-transcriber"
-version = "0.2.0"
+version = "0.2.1"
 description = "Live transcript of any audio playing on an Ubuntu desktop"
 readme = "README.md"
 license = "GPL-3.0-or-later"
